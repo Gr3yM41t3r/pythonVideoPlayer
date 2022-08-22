@@ -51,12 +51,8 @@ class Player(QMainWindow):
         """Set up the user interface, signals & slots
         """
 
-
-
         self.videoframe = QFrame(self)
         self.setCentralWidget(self.videoframe)
-
-
 
     def right_menu(self, pos):
         menu = QMenu()
