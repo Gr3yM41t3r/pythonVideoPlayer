@@ -35,7 +35,8 @@ import vlc
 class Player(QMainWindow):
     """A simple Media Player using VLC and Qt
     """
-    language_option=['English','French','Chinese','French','Chinese','French','Chinese']
+    language_option=['English','French','Chinese']
+    selected_language='French'
     def __init__(self, master=None):
         QMainWindow.__init__(self, master)
         self.setWindowTitle("Media Player")
@@ -64,6 +65,7 @@ class Player(QMainWindow):
         self.retranslateUi()
         self.listWidget.hide()
         self.thread = Thread(target=self.inactivityDetector)
+        self.loopingVideo()
 
 
 
@@ -80,10 +82,6 @@ class Player(QMainWindow):
             self.listWidget.addItem(item)
             item = self.listWidget.item(i)
             item.setText(self.language_option[i])
-
-
-
-
 
     def right_menu(self, pos):
         menu = QMenu()
@@ -110,14 +108,26 @@ class Player(QMainWindow):
             self.isPaused = False
 
     def Stop(self):
-        """Stop player
-        """
         self.mediaplayer.stop()
+
+
+    def loopingVideo(self):
+
+        file = "assets/videos/placeholder.mp4"
+        self.media = self.instance.media_new(file)
+        # put the media in the media player
+        self.mediaplayer.set_media(self.media)
+        # parse the metadata of the file
+        self.media.parse()
+        # set the title of the track as window title
+        self.setWindowTitle(self.media.get_meta(0))
+        self.mediaplayer.set_xwindow(self.videoframe.winId())
+        self.PlayPause()
 
     def OpenFile(self):
         """Open a media file in a MediaPlayer
         """
-        filename = "assets/videos/test.mp4"
+        filename = "assets/videos/"+self.selected_language+"_Vin.mp4"
         if sys.version < '3':
             filename = unicode(filename)
         self.media = self.instance.media_new(filename)
@@ -146,10 +156,15 @@ class Player(QMainWindow):
     def wheelEvent(self, QWheelEvent):
         self.stopPlayBack()
         self.start_time = time.time()
-        self.current_option += 1
-        print(self.current_option)
-        self.listWidget.item(self.current_option % len(self.language_option)).setSelected(True)
+        if QWheelEvent.angleDelta().y()// 120==1:
+            print("increment")
+            self.current_option -= 1
+        elif QWheelEvent.angleDelta().y()// 120==-1:
+            print("decrement")
 
+            self.current_option += 1
+
+        self.listWidget.item(self.current_option % len(self.language_option)).setSelected(True)
 
         if not self.thread.is_alive():
             self.thread = Thread(target=self.inactivityDetector)
@@ -159,10 +174,9 @@ class Player(QMainWindow):
         while True:
             if time.time()-self.start_time>3:
                 print("chosiing language"+ self.language_option[self.current_option%len(self.language_option)])
+                self.selected_language=self.language_option[self.current_option%len(self.language_option)]
                 self.resumePlayBack()
                 return
-
-
 
 
     def stopPlayBack(self):
@@ -174,13 +188,6 @@ class Player(QMainWindow):
         self.OpenFile()
         self.listWidget.hide()
         self.isPaused=False
-
-
-    def choseLanguage(self):
-        pass
-
-
-
 
 
 
