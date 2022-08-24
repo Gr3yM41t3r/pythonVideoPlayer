@@ -22,7 +22,9 @@
 import sys
 import os.path
 import time
+from threading import Thread
 
+from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QMainWindow, QWidget, QFrame, QSlider, QHBoxLayout, QPushButton, \
@@ -33,7 +35,7 @@ import vlc
 class Player(QMainWindow):
     """A simple Media Player using VLC and Qt
     """
-    language_option=['FR','EN','CN']
+    language_option=['English','French','Chinese','French','Chinese','French','Chinese']
     def __init__(self, master=None):
         QMainWindow.__init__(self, master)
         self.setWindowTitle("Media Player")
@@ -44,10 +46,7 @@ class Player(QMainWindow):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.right_menu)
 
-        self.centralwidget = QWidget(self)
-        self.centralwidget.resize(300,300)
-        self.centralwidget.hide()
-        self.centralwidget.setStyleSheet("background:rgb(255, 255, 255);")
+
 
         self.videoframe = QWidget(self)
         self.setCentralWidget(self.videoframe)
@@ -56,19 +55,44 @@ class Player(QMainWindow):
         self.s=0
 
 
+        self.listWidget = QtWidgets.QListWidget(self)
+        self.listWidget.setGeometry(QtCore.QRect(680, 415, 380, 250))
+        self.listWidget.setStyleSheet("background-color: rgba(190, 206, 255, 0.08);")
+        self.listWidget.setAutoScroll(True)
+        self.listWidget.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.current_option = 0
+        self.retranslateUi()
+        self.listWidget.hide()
+        self.thread = Thread(target=self.inactivityDetector)
+
+
+
+
+
+    def retranslateUi(self):
+        font = QtGui.QFont()
+        font.setFamily("P052 [UKWN]")
+        font.setPointSize(30)
+        for i in range(len(self.language_option)):
+            item = QtWidgets.QListWidgetItem()
+            item.setTextAlignment(QtCore.Qt.AlignCenter)
+            item.setFont(font)
+            self.listWidget.addItem(item)
+            item = self.listWidget.item(i)
+            item.setText(self.language_option[i])
+
+
+
 
 
     def right_menu(self, pos):
         menu = QMenu()
-
         # Add menu options
         exit_option = menu.addAction('Exit')
         play_option = menu.addAction('play')
-
         # Menu option events
         exit_option.triggered.connect(lambda: exit())
         play_option.triggered.connect(self.OpenFile)
-
         # Position
         menu.exec_(self.mapToGlobal(pos))
 
@@ -103,12 +127,6 @@ class Player(QMainWindow):
         # parse the metadata of the file
         self.media.parse()
         # set the title of the track as window title
-        print(self.media.get_meta(0))
-        print(self.media.get_meta(1))
-        print(self.media.get_meta(2))
-        print(self.media.get_meta(3))
-        print(self.media.get_meta(4))
-        print(self.media.get_meta(5))
         self.setWindowTitle(self.media.get_meta(0))
 
         # the media player has to be 'connected' to the QFrame
@@ -126,40 +144,40 @@ class Player(QMainWindow):
 
 
     def wheelEvent(self, QWheelEvent):
-        print("detected")
+        self.stopPlayBack()
         self.start_time = time.time()
         self.current_option += 1
-        while time.time()-self.start_time<5:
-            if QWheelEvent:
-                print("starting over")
+        print(self.current_option)
+        self.listWidget.item(self.current_option % len(self.language_option)).setSelected(True)
+
+
+        if not self.thread.is_alive():
+            self.thread = Thread(target=self.inactivityDetector)
+            self.thread.start()
+
+    def inactivityDetector(self):
+        while True:
+            if time.time()-self.start_time>3:
+                print("chosiing language"+ self.language_option[self.current_option%len(self.language_option)])
+                self.resumePlayBack()
                 return
-            print("finished")
+
+
+
+
+    def stopPlayBack(self):
+        self.listWidget.show()
+        self.isPaused = True
+
+    def resumePlayBack(self):
+        self.videoframe.show()
+        self.OpenFile()
+        self.listWidget.hide()
+        self.isPaused=False
+
 
     def choseLanguage(self):
-        print("detected")
-        self.current_option += 1
-        self.start_time = time.time()
-        if self.isPaused:
-            print(self.language_option[self.current_option % 3])
-            while self.isPaused:
-                if time.time() - self.start_time > 3:
-                    print("breaking out")
-                    self.centralwidget.hide()
-                    self.videoframe.show()
-                    self.OpenFile()
-                    self.isPaused = False
-
-        else:
-            self.mediaplayer.stop()
-            self.videoframe.hide()
-            self.centralwidget.show()
-            self.isPaused = True
-
-
-
-
-
-
+        pass
 
 
 
