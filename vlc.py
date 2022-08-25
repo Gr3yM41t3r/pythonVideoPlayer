@@ -7173,5 +7173,19 @@ if __name__ == '__main__':
     else:
         print('Usage: %s <movie_filename>' % sys.argv[0])
         print('Once launched, type ? for help.')
-        print('')
+        print(''),
+b
+,
+C
+n
+o
+
+
+b
+'
+A
+s
+o
+_
+n
         print_version()
