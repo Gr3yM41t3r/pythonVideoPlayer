@@ -129,11 +129,9 @@ class Player(QMainWindow):
         print("detected")
         self.start_time = time.time()
         self.current_option += 1
-        while time.time()-self.start_time<5:
-            if QWheelEvent:
-                print("starting over")
-                return
-            print("finished")
+        time.sleep(2)
+        print(self.current_option)
+
 
     def choseLanguage(self):
         print("detected")
