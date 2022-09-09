@@ -49,8 +49,7 @@ class Player(QMainWindow):
         # creating an empty vlc media player
         self.mediaplayer = self.instance.media_player_new()
 
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.right_menu)
+
         self.monitor = mntr
 
         #black screen
@@ -80,7 +79,6 @@ class Player(QMainWindow):
         self.language_List.setMaximumHeight(self.language_List.sizeHintForRow(0) * self.language_List.count())
         self.language_List.setMinimumHeight(self.language_List.sizeHintForRow(0) * 3)
         self.language_List.setMinimumWidth(self.language_List.sizeHintForColumn(0) + 100)
-        self.language_List.setAutoScroll(True)
         self.language_List.hide()
 
 
@@ -94,14 +92,37 @@ class Player(QMainWindow):
 
 
 
-        #---------------Image
+        #---------------Image----------------------------
+
         self.messageView = QLabel(self)
-        self.messageView.resize(500, 250)
-        pixmap = QtGui.QPixmap("assets/ass/25.svg")
+        self.messageView.resize(700, 400)
         self.messageView.move(int(monitor.width() / 2 - self.messageView.width() / 2),
                               int(monitor.height() / 2 - self.messageView.height() / 2))
-        self.messageView.setPixmap(pixmap)
+        self.messageView.setStyleSheet("""
+                 border-top-left-radius:30px;
+                 border-bottom-left-radius:30px;
+                 border-top-right-radius:30px;
+                 border-bottom-right-radius:30px;
+             """)
+
         self.messageView.hide()
+
+
+        #----------------Technical informations ------------
+        self.technicalInformation = QWidget(self)
+        self.setStyleSheet("background:rgb(0,0,0);")
+        self.technicalInformation.resize(monitor.width(),monitor.height())
+        self.testText = QLabel(self.technicalInformation)
+        font = QtGui.QFont()
+        font.setFamily("P052 [UKWN]")
+        font.setPointSize(80)
+        self.testText.setFont(font)
+        self.testText.setText("TEST1")
+
+        self.testText.move(monitor.center())
+        self.technicalInformation.hide()
+
+
         # thread watcher for mouse input inactivity
         self.Play()
         self.thread = Thread(target=self.inactivityDetector)
@@ -114,12 +135,8 @@ class Player(QMainWindow):
         self.checkThreadTimer.setInterval(1000)
         self.checkThreadTimer.timeout.connect(self.readListValues)
         self.checkThreadTimer.start()
+        self.a=1
 
-
-    def get_end_callback(mediaplayer):
-        def end_callback(event):
-            print("End of playing reached")
-        return end_callback
 
 
     def retranslateUi(self):
@@ -146,43 +163,50 @@ class Player(QMainWindow):
         menu.exec_(self.mapToGlobal(pos))
 
     def mousePressEvent(self, event):
+
+        self.start_time = time.time()
         if event.button()==Qt.RightButton:
-            sys.exit(app.exec_())
+            if self.technicalInformation.isVisible():
+                self.a+=1
+                self.testText.setText(str(self.a))
+            else:
+
+                self.mediaplayer.stop()
+                self.technicalInformation.show()
         elif event.button()==Qt.LeftButton:
+            self.technicalInformation.hide()
+            self.messageView.hide()
+            self.videoframe.show()
             self.OpenFile()
+        elif event.button()==Qt.MiddleButton:
+            self.showMessage("25")
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            exit()
 
     def wheelEvent(self, event):
         self.start_time = time.time()
         if self.isPlayingTrailer:
-            self.messageView.show()
+            self.showMessage("26")
         else:
+            self.showLanguageMenu()
             item = self.language_List.item(self.current_option % len(self.language_option))
             item.setIcon(QtGui.QIcon())
-            self.showLanguageMenu()
             if event.angleDelta().y() // 120 == 1:
                 self.current_option -= 1
             elif event.angleDelta().y() // 120 == -1:
                 self.current_option += 1
             item = self.language_List.item(self.current_option % len(self.language_option))
             item.setSelected(True)
-            self.language_List.scrollToItem(item)
-            icon = QIcon('assets/icons/check.png')
+            icon = QIcon('assets/icons/checksvg2.svg')
             item.setIcon(icon)
+
+            self.language_List.scrollToItem(item)
         if not self.thread.is_alive():
             self.thread = Thread(target=self.inactivityDetector)
             self.thread.start()
 
-    def PlayPause(self):
-        # Toggle play/pause status
-        if self.mediaplayer.is_playing():
-            self.mediaplayer.pause()
-            self.isPaused = True
-        else:
-            if self.mediaplayer.play() == -1:
-                self.OpenFile()
-                return
-            self.mediaplayer.play()
-            self.isPaused = False
 
 
     def Play(self):
@@ -193,34 +217,8 @@ class Player(QMainWindow):
 
     def OpenFile(self):
         self.isPlayingTrailer = False
-        """Open a media file in a MediaPlayer
-        """
-        filename = "assets/videos/" + self.selected_language + "_Vin.mp4"
-        if sys.version < '3':
-            filename = vlc.unicode(filename)
-        self.media = self.instance.media_new(filename)
-        # put the media in the media player
-        self.mediaplayer.set_media(self.media)
-
-        # parse the metadata of the file
-        self.media.parse()
-        # set the title of the track as window title
-
-
-        # the media player has to be 'connected' to the QFrame
-        # (otherwise a video would be displayed in it's own window)
-        # this is platform specific!
-        # you have to give the id of the QFrame (or similar object) to
-        # vlc, different platforms have different functions for this
-        if sys.platform.startswith('linux'):  # for Linux using the X Server
-            self.mediaplayer.set_xwindow(self.videoframe.winId())
-        elif sys.platform == "win32":  # for Windows
-            self.mediaplayer.set_hwnd(self.videoframe.winId())
-        elif sys.platform == "darwin":  # for MacOS
-            self.mediaplayer.set_nsobject(int(self.videoframe.winId()))
-        self.PlayPause()
-
-
+        self.filename = "assets/videos/" + self.selected_language + "_Vin.mp4"
+        self.Play()
 
     def inactivityDetector(self):
         while True:
@@ -232,6 +230,8 @@ class Player(QMainWindow):
                 self.selected_language = self.language_option[self.current_option % len(self.language_option)]
                 self.resumePlayBack()
                 break
+
+
 
 
 
@@ -262,6 +262,14 @@ class Player(QMainWindow):
 
     def showLanguageMenu(self):
         self.language_List.show()
+
+    def showMessage(self,message):
+        pixmap = QtGui.QPixmap("assets/ass/"+message+".svg")
+        self.messageView.setPixmap(pixmap)
+        self.messageView.show()
+        if not self.thread.is_alive():
+            self.thread = Thread(target=self.inactivityDetector)
+            self.thread.start()
 
     def resumePlayBack(self):
         self.OpenFile()
