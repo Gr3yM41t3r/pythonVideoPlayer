@@ -7,16 +7,19 @@ from PyQt5.Qt import Qt
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QCursor
 
+from MainDisplay import Player
+
 
 class MainWindow(QMainWindow):
     control_options = ['play', 'language', 'specs']
     default_selection = "play"
 
-    def __init__(self, videoPLayer):
+    def __init__(self,mntr, videoPLayer):
         super(MainWindow, self).__init__()
+        self.monitor=mntr
         # Window size
-        self.WIDTH = 300
-        self.HEIGHT = 300
+        self.WIDTH = 480
+        self.HEIGHT = 480
         self.resize(self.WIDTH, self.HEIGHT)
         # Widget
         self.centralwidget = QWidget(self)
@@ -28,7 +31,9 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowOpacity(1)
-        self.radius = 150
+        self.centralwidget.move(int(monitor.width() / 2 - self.width() / 2),
+                                int(monitor.height() / 2 - self.height() / 2))
+        self.radius = 240
         self.videoPlayer = videoPLayer
         self.centralwidget.setStyleSheet(
             """
@@ -57,8 +62,11 @@ class MainWindow(QMainWindow):
 
     def mousePressEvent(self, event):
         self.initialPos = QCursor().pos().x()
+        print(QCursor().pos().x())
 
     def mouseReleaseEvent(self, event):
+        '''
+        mm = Player()
         self.moveFlag = False
         self.setCursor(Qt.CrossCursor)
         self.endPos = QCursor().pos().x()
@@ -69,13 +77,15 @@ class MainWindow(QMainWindow):
             self.changeImage(-1)
         elif event.button() == Qt.LeftButton and abs(QCursor().pos().x() - self.initialPos) < 20:
             if self.default_selection == "play":
-                self.videoPlayer.OpenFile()
+                mm.OpenFile()
 
         else:
-            pass
+            pass'''
 
     def mouseMoveEvent(self, event):
-        pass
+        print(QCursor().pos().x())
+
+
 
 
     def wheelEvent(self, QWheelEvent):
@@ -103,8 +113,9 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication([])
-    window = MainWindow(None)
     monitor = QDesktopWidget().screenGeometry(0)
-    window.move(monitor.center().x()-150,monitor.center().y()-150)
-    window.show()
+    window = MainWindow(None,monitor)
+
+    window.move(monitor.center())
+    window.showFullScreen()
     sys.exit(app.exec_())
