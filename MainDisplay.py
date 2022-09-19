@@ -109,24 +109,20 @@ class Player(QMainWindow):
 
 
         #----------------Technical informations ------------
-        self.technicalInformation = QWidget(self)
-        self.setStyleSheet("background:rgb(0,0,0);")
-        self.technicalInformation.resize(monitor.width(),monitor.height())
-        self.testText = QLabel(self.technicalInformation)
-        font = QtGui.QFont()
-        font.setFamily("P052 [UKWN]")
-        font.setPointSize(80)
-        self.testText.setFont(font)
-        self.testText.setText("TEST1")
+        self.tableWidget = QtWidgets.QTableWidget(self)
 
-        self.testText.move(monitor.center())
-        self.technicalInformation.hide()
+        self.tableWidget.resize(720,500)
+        self.tableWidget.move(int(monitor.width() / 2 - self.tableWidget.width() / 2),
+                              int(monitor.height() / 2 - self.tableWidget.height() / 2))
+        self.tableWidget.setColumnCount(1)
+        self.tableWidget.setRowCount(4)
+        self.tableWidget.setStyleSheet("background-color:grey")
+
 
 
         # thread watcher for mouse input inactivity
         self.Play()
         self.thread = Thread(target=self.inactivityDetector)
-
         self.current_option = 0
         self.shouldWait=True
         self.isPlayingTrailer=True
@@ -136,6 +132,9 @@ class Player(QMainWindow):
         self.checkThreadTimer.timeout.connect(self.readListValues)
         self.checkThreadTimer.start()
         self.a=1
+        self.setupInformationTable()
+        self.fillInformationTable()
+        self.tableWidget.hide()
 
 
 
@@ -163,18 +162,16 @@ class Player(QMainWindow):
         menu.exec_(self.mapToGlobal(pos))
 
     def mousePressEvent(self, event):
-
         self.start_time = time.time()
         if event.button()==Qt.RightButton:
-            if self.technicalInformation.isVisible():
+            if self.tableWidget.isVisible():
                 self.a+=1
-                self.testText.setText(str(self.a))
+                self.fillInformationTable()
             else:
-
                 self.mediaplayer.stop()
-                self.technicalInformation.show()
+                self.tableWidget.show()
         elif event.button()==Qt.LeftButton:
-            self.technicalInformation.hide()
+            self.tableWidget.hide()
             self.messageView.hide()
             self.videoframe.show()
             self.OpenFile()
@@ -231,10 +228,6 @@ class Player(QMainWindow):
                 self.resumePlayBack()
                 break
 
-
-
-
-
     def readListValues(self):
         if self.shouldWait:
             while self.shouldWait and not self.mediaplayer.is_playing():
@@ -258,8 +251,6 @@ class Player(QMainWindow):
                 self.counter=0
 
 
-
-
     def showLanguageMenu(self):
         self.language_List.show()
 
@@ -271,16 +262,42 @@ class Player(QMainWindow):
             self.thread = Thread(target=self.inactivityDetector)
             self.thread.start()
 
+    def setupInformationTable(self):
+        _translate = QtCore.QCoreApplication.translate
+        item = QtWidgets.QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(0, item)
+        for i in range(4):
+            item = QtWidgets.QTableWidgetItem()
+            self.tableWidget.setVerticalHeaderItem(i, item)
+            self.tableWidget.setItem(i, 0, item)
+            item = QtWidgets.QTableWidgetItem()
+            self.tableWidget.setItem(i, 0, item)
+            print("added")
+
+
+    def fillInformationTable(self):
+        for i in range(4):
+            item = self.tableWidget.verticalHeaderItem(i)
+            item.setText("Prop"+str(i))
+            item = self.tableWidget.item(i, 0)
+            item.setText("Value" + str(i)+":"+str(self.a))
+        header = self.tableWidget.horizontalHeader()
+        header.setDefaultSectionSize(200)
+        header = self.tableWidget.verticalHeader()
+        header.setDefaultSectionSize(100)
+
+
     def resumePlayBack(self):
         self.OpenFile()
         self.language_List.hide()
         self.isPaused = False
 
 
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     monitor = QDesktopWidget().screenGeometry(2)
-
     player = Player(monitor)
     player.move(monitor.center())
     player.showFullScreen()
