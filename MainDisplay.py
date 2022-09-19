@@ -32,15 +32,13 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QFrame, QSlider, QHBoxLayout, 
 import vlc
 
 
-
 class Player(QMainWindow):
     """A simple Media Player using VLC and Qt
     """
     language_option = ['English', 'French', 'Chinese', 'Arabic', 'German', 'Spanish', 'Italien']
     selected_language = 'French'
 
-
-    def __init__(self,mntr, master=None):
+    def __init__(self, mntr, master=None):
         QMainWindow.__init__(self, master)
         self.filename = "assets/videos/placeholder.mp4"
         self.setWindowTitle("Media Player")
@@ -49,12 +47,10 @@ class Player(QMainWindow):
         # creating an empty vlc media player
         self.mediaplayer = self.instance.media_player_new()
 
-
         self.monitor = mntr
 
-        #black screen
+        # black screen
         self.setStyleSheet("background:rgb(0,0,0);")
-
 
         # creating video frame
         self.videoframe = QWidget(self)
@@ -81,18 +77,12 @@ class Player(QMainWindow):
         self.language_List.setMinimumWidth(self.language_List.sizeHintForColumn(0) + 100)
         self.language_List.hide()
 
-
-
-
         self.language_List.move(int(monitor.width() / 2 - self.language_List.width() / 2),
                                 int(monitor.height() / 2 - self.language_List.height() / 2))
         print(int(monitor.height() / 2 - self.language_List.height() / 2))
         print(int(monitor.width() / 2 - self.language_List.width() / 2))
 
-
-
-
-        #---------------Image----------------------------
+        # ---------------Image----------------------------
 
         self.messageView = QLabel(self)
         self.messageView.resize(700, 400)
@@ -107,36 +97,38 @@ class Player(QMainWindow):
 
         self.messageView.hide()
 
+        # ----------------Technical informations -----------
+        self.tableInfo = QtWidgets.QTableWidget(self)
+        self.headerFont = QtGui.QFont()
+        self.inftoFont = QtGui.QFont()
+        self.tableInfo.resizeRowsToContents()
+        self.tableInfo.resizeColumnsToContents()
+        self.a = 1
+        self.TableHeight = 500
+        self.TableWidth = 2 * self.TableHeight
+        self.tableInfo.setColumnCount(1)
+        self.tableInfo.setRowCount(4)
+        self.setupInformationTable()
+        self.fillInformationTable()
+        self.tableInfo.resize(self.TableWidth, self.TableHeight * 2)
+        self.tableInfo.move(int(monitor.width() / 2 - self.tableInfo.width() / 2),
+                            int(monitor.height() / 2 - self.tableInfo.height() / 2))
 
-        #----------------Technical informations ------------
-        self.tableWidget = QtWidgets.QTableWidget(self)
-
-        self.tableWidget.resize(720,500)
-        self.tableWidget.move(int(monitor.width() / 2 - self.tableWidget.width() / 2),
-                              int(monitor.height() / 2 - self.tableWidget.height() / 2))
-        self.tableWidget.setColumnCount(1)
-        self.tableWidget.setRowCount(4)
-        self.tableWidget.setStyleSheet("background-color:grey")
-
-
+        self.tableInfo.setStyleSheet("background:rgb(255,255,255);")
 
         # thread watcher for mouse input inactivity
         self.Play()
         self.thread = Thread(target=self.inactivityDetector)
         self.current_option = 0
-        self.shouldWait=True
-        self.isPlayingTrailer=True
-        self.counter=0
+        self.shouldWait = True
+        self.isPlayingTrailer = True
+        self.counter = 0
         self.checkThreadTimer = QtCore.QTimer(self)
         self.checkThreadTimer.setInterval(1000)
         self.checkThreadTimer.timeout.connect(self.readListValues)
         self.checkThreadTimer.start()
-        self.a=1
-        self.setupInformationTable()
-        self.fillInformationTable()
-        self.tableWidget.hide()
 
-
+        self.tableInfo.hide()
 
     def retranslateUi(self):
         font = QtGui.QFont()
@@ -163,19 +155,19 @@ class Player(QMainWindow):
 
     def mousePressEvent(self, event):
         self.start_time = time.time()
-        if event.button()==Qt.RightButton:
-            if self.tableWidget.isVisible():
-                self.a+=1
+        if event.button() == Qt.RightButton:
+            if self.tableInfo.isVisible():
+                self.a += 1
                 self.fillInformationTable()
             else:
                 self.mediaplayer.stop()
-                self.tableWidget.show()
-        elif event.button()==Qt.LeftButton:
-            self.tableWidget.hide()
+                self.tableInfo.show()
+        elif event.button() == Qt.LeftButton:
+            self.tableInfo.hide()
             self.messageView.hide()
             self.videoframe.show()
             self.OpenFile()
-        elif event.button()==Qt.MiddleButton:
+        elif event.button() == Qt.MiddleButton:
             self.showMessage("25")
 
     def keyPressEvent(self, event):
@@ -204,10 +196,8 @@ class Player(QMainWindow):
             self.thread = Thread(target=self.inactivityDetector)
             self.thread.start()
 
-
-
     def Play(self):
-        self.media=self.instance.media_new(self.filename)
+        self.media = self.instance.media_new(self.filename)
         self.mediaplayer.set_media(self.media)
         self.media.parse()
         self.mediaplayer.play()
@@ -234,28 +224,27 @@ class Player(QMainWindow):
                 self.counter += 1
                 print("hiding")
                 self.videoframe.hide()
-                if self.counter<5:
+                if self.counter < 5:
                     print("returning")
                     return
                 else:
-                    self.shouldWait=False
+                    self.shouldWait = False
                     self.videoframe.show()
                     print("showing")
         else:
             if not self.mediaplayer.is_playing() and not self.shouldWait:
                 print("start")
-                self.filename="assets/videos/placeholder.mp4"
+                self.filename = "assets/videos/placeholder.mp4"
                 self.Play()
-                self.isPlayingTrailer=True
-                self.shouldWait=True
-                self.counter=0
-
+                self.isPlayingTrailer = True
+                self.shouldWait = True
+                self.counter = 0
 
     def showLanguageMenu(self):
         self.language_List.show()
 
-    def showMessage(self,message):
-        pixmap = QtGui.QPixmap("assets/ass/"+message+".svg")
+    def showMessage(self, message):
+        pixmap = QtGui.QPixmap("assets/ass/" + message + ".svg")
         self.messageView.setPixmap(pixmap)
         self.messageView.show()
         if not self.thread.is_alive():
@@ -265,34 +254,36 @@ class Player(QMainWindow):
     def setupInformationTable(self):
         _translate = QtCore.QCoreApplication.translate
         item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(0, item)
+        self.tableInfo.setHorizontalHeaderItem(0, item)
         for i in range(4):
             item = QtWidgets.QTableWidgetItem()
-            self.tableWidget.setVerticalHeaderItem(i, item)
-            self.tableWidget.setItem(i, 0, item)
+            self.tableInfo.setVerticalHeaderItem(i, item)
+            self.tableInfo.setItem(i, 0, item)
             item = QtWidgets.QTableWidgetItem()
-            self.tableWidget.setItem(i, 0, item)
+            self.tableInfo.setItem(i, 0, item)
             print("added")
-
 
     def fillInformationTable(self):
         for i in range(4):
-            item = self.tableWidget.verticalHeaderItem(i)
-            item.setText("Prop"+str(i))
-            item = self.tableWidget.item(i, 0)
-            item.setText("Value" + str(i)+":"+str(self.a))
-        header = self.tableWidget.horizontalHeader()
-        header.setDefaultSectionSize(200)
-        header = self.tableWidget.verticalHeader()
-        header.setDefaultSectionSize(100)
+            item = self.tableInfo.verticalHeaderItem(i)
+            item.setTextAlignment(Qt.AlignCenter)
+            item.setText("Prop" + str(i))
+            item = self.tableInfo.item(i, 0)
+            item.setTextAlignment(Qt.AlignCenter)
+            item.setText("Value" + str(i) + ":" + str(self.a))
 
+        header = self.tableInfo.horizontalHeader()
+        header.setDefaultSectionSize(int(self.TableWidth / 2))
+        header = self.tableInfo.verticalHeader()
+        header.setDefaultSectionSize(int(self.TableHeight / 2))
+        header.setMinimumWidth(self.TableHeight)
+        self.tableInfo.horizontalHeader().hide()
+        self.tableInfo.verticalScrollBar().hide()
 
     def resumePlayBack(self):
         self.OpenFile()
         self.language_List.hide()
         self.isPaused = False
-
-
 
 
 if __name__ == "__main__":
