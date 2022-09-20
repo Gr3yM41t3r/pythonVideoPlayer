@@ -99,8 +99,11 @@ class Player(QMainWindow):
 
         # ----------------Technical informations -----------
         self.tableInfo = QtWidgets.QTableWidget(self)
+
         self.headerFont = QtGui.QFont()
-        self.inftoFont = QtGui.QFont()
+        self.headerFont.setPointSize(40)
+        self.infoFont = QtGui.QFont()
+        self.infoFont.setPointSize(40)
         self.tableInfo.resizeRowsToContents()
         self.tableInfo.resizeColumnsToContents()
         self.a = 1
@@ -114,7 +117,8 @@ class Player(QMainWindow):
         self.tableInfo.move(int(monitor.width() / 2 - self.tableInfo.width() / 2),
                             int(monitor.height() / 2 - self.tableInfo.height() / 2))
 
-        self.tableInfo.setStyleSheet("background:rgb(255,255,255);")
+        self.tableInfo.setStyleSheet("background:rgb(255,255,255);color:black;"
+                                     "selection-background-color:white;selection-color:black")
 
         # thread watcher for mouse input inactivity
         self.Play()
@@ -144,18 +148,21 @@ class Player(QMainWindow):
 
     def right_menu(self, pos):
         menu = QMenu()
-        # Add menu options
         exit_option = menu.addAction('Exit')
         play_option = menu.addAction('play')
-        # Menu option events
         exit_option.triggered.connect(lambda: exit())
         play_option.triggered.connect(self.OpenFile)
-        # Position
         menu.exec_(self.mapToGlobal(pos))
 
+    # ----------------mouse and keyboard events---------------------------
+
     def mousePressEvent(self, event):
-        self.start_time = time.time()
+        self.start_time=time.time()
         if event.button() == Qt.RightButton:
+            self.isPlayingTrailer=False
+            if not self.thread.is_alive():
+                self.thread = Thread(target=self.inactivityDetector)
+                self.thread.start()
             if self.tableInfo.isVisible():
                 self.a += 1
                 self.fillInformationTable()
@@ -176,47 +183,61 @@ class Player(QMainWindow):
 
     def wheelEvent(self, event):
         self.start_time = time.time()
-        if self.isPlayingTrailer:
+        if self.isPlayingTrailer and not self.tableInfo.isVisible():
             self.showMessage("26")
         else:
-            self.showLanguageMenu()
-            item = self.language_List.item(self.current_option % len(self.language_option))
-            item.setIcon(QtGui.QIcon())
-            if event.angleDelta().y() // 120 == 1:
-                self.current_option -= 1
-            elif event.angleDelta().y() // 120 == -1:
-                self.current_option += 1
-            item = self.language_List.item(self.current_option % len(self.language_option))
-            item.setSelected(True)
-            icon = QIcon('assets/icons/checksvg2.svg')
-            item.setIcon(icon)
-
-            self.language_List.scrollToItem(item)
+            self.tableInfo.hide()
+            self.displaylanguagemenu(event)
         if not self.thread.is_alive():
             self.thread = Thread(target=self.inactivityDetector)
             self.thread.start()
 
-    def Play(self):
-        self.media = self.instance.media_new(self.filename)
-        self.mediaplayer.set_media(self.media)
-        self.media.parse()
-        self.mediaplayer.play()
+    def displaylanguagemenu(self, event):
+        self.showLanguageMenu()
+        item = self.language_List.item(self.current_option % len(self.language_option))
+        item.setIcon(QtGui.QIcon())
+        if event.angleDelta().y() // 120 == 1:
+            self.current_option -= 1
+        elif event.angleDelta().y() // 120 == -1:
+            self.current_option += 1
+        item = self.language_List.item(self.current_option % len(self.language_option))
+        item.setSelected(True)
+        icon = QIcon('assets/icons/checksvg2.svg')
+        item.setIcon(icon)
+        self.language_List.scrollToItem(item)
 
-    def OpenFile(self):
-        self.isPlayingTrailer = False
-        self.filename = "assets/videos/" + self.selected_language + "_Vin.mp4"
-        self.Play()
-
+    # ------- inactivity---------
     def inactivityDetector(self):
         while True:
             if time.time() - self.start_time > 3:
                 if self.messageView.isVisible():
                     self.messageView.hide()
+                    print('hekjazhkjehazkehjaz')
+                    self.language_List.hide()
                     break
                 print("chosiing language" + self.language_option[self.current_option % len(self.language_option)])
                 self.selected_language = self.language_option[self.current_option % len(self.language_option)]
                 self.resumePlayBack()
                 break
+        while True:
+            print("test")
+            print(time.time())
+            print(self.start_time)
+            print(self.tableInfo.isVisible())
+            print( time.time()-self.start_time)
+
+            if time.time()-self.start_time > 30 and self.tableInfo.isVisible():
+                print("reddd baleek hadi bladek")
+            if time.time()-self.start_time > 40 and self.tableInfo.isVisible():
+                print("khreeej t9owed")
+                self.tableInfo.hide()
+                break
+
+
+    def messagewatch(self):
+        while True:
+            if time.time()-self.start_time>30:
+                pass
 
     def readListValues(self):
         if self.shouldWait:
@@ -251,6 +272,8 @@ class Player(QMainWindow):
             self.thread = Thread(target=self.inactivityDetector)
             self.thread.start()
 
+    # --------------Fiche technique--------------------------------
+
     def setupInformationTable(self):
         _translate = QtCore.QCoreApplication.translate
         item = QtWidgets.QTableWidgetItem()
@@ -267,9 +290,11 @@ class Player(QMainWindow):
         for i in range(4):
             item = self.tableInfo.verticalHeaderItem(i)
             item.setTextAlignment(Qt.AlignCenter)
+            item.setFont(self.headerFont)
             item.setText("Prop" + str(i))
             item = self.tableInfo.item(i, 0)
             item.setTextAlignment(Qt.AlignCenter)
+            item.setFont(self.infoFont)
             item.setText("Value" + str(i) + ":" + str(self.a))
 
         header = self.tableInfo.horizontalHeader()
@@ -279,6 +304,18 @@ class Player(QMainWindow):
         header.setMinimumWidth(self.TableHeight)
         self.tableInfo.horizontalHeader().hide()
         self.tableInfo.verticalScrollBar().hide()
+
+    # --------------play back --------------------------
+    def Play(self):
+        self.media = self.instance.media_new(self.filename)
+        self.mediaplayer.set_media(self.media)
+        self.media.parse()
+        self.mediaplayer.play()
+
+    def OpenFile(self):
+        self.isPlayingTrailer = False
+        self.filename = "assets/videos/" + self.selected_language + "_Vin.mp4"
+        self.Play()
 
     def resumePlayBack(self):
         self.OpenFile()
